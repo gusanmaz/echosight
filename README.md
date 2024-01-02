@@ -2,6 +2,8 @@
 
 `libcamera-jpeg -o z.jpg`
 
+### Installation & Usage
+
 * `git clone https://github.com/gusanmaz/echosight`
 * `cd echosight`
 * `python3 -m venv myenv`

@@ -11,8 +11,6 @@ from io import BytesIO
 # Global variable to check if a photo is being processed
 is_processing = False
 
-# Replace XYZ with you API TOKEN
-os.environ['REPLICATE_API_TOKEN'] = 'XYZ'
 
 def download_and_play_audio(json_output):
     try:

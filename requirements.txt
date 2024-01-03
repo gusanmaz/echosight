@@ -3,3 +3,4 @@ replicate
 evdev
 Pillow
 pydub
+opencv-python

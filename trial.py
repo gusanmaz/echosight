@@ -1,19 +1,7 @@
 import replicate
+import os
 
-
-output = replicate.run(
-  "lucataco/xtts-v2:684bc3855b37866c0c65add2ff39c78f3dea3f4ff103a436465326e0f438d55e",
-  input={
-    "text": "olasılığını içeren ve daha az bilinen bazı temel-bilimsel faktörler yanında, hakkında daha da zor tahminlerde bulunabildiğimiz (canlılarda \"akıl\" denen yapının evrimleşmesi, gelişmesi, bir medeniyet kurması, bilimsel ",
-    "speaker": "https://replicate.delivery/pbxt/Jt79w0xsT64R1JsiJ0LQRL8UcWspg5J4RFrU6YwEKpOT1ukS/male.wav",
-    "language": "tr",
-    "cleanup_voice": True
-  }
-)
-print(output)
-
-exit(9)
-
+os.environ['REPLICATE_API_TOKEN'] = 'r8_RAFPGc5L732QYMtVpoP8qaU6RL0O2TJ4H5OAW'
 
 image_path = "example.jpg"
 with open(image_path, "rb") as image:
@@ -42,3 +30,16 @@ with open(image_path, "rb") as image:
     )
     print("Seamless Model finished\n")
     print(output)
+
+output = replicate.run(
+  "lucataco/xtts-v2:684bc3855b37866c0c65add2ff39c78f3dea3f4ff103a436465326e0f438d55e",
+  input={
+    "text": "olasılığını içeren ve daha az bilinen bazı temel-bilimsel faktörler yanında, hakkında daha da zor tahminlerde bulunabildiğimiz (canlılarda \"akıl\" denen yapının evrimleşmesi, gelişmesi, bir medeniyet kurması, bilimsel ",
+    "speaker": "https://replicate.delivery/pbxt/Jt79w0xsT64R1JsiJ0LQRL8UcWspg5J4RFrU6YwEKpOT1ukS/male.wav",
+    "language": "tr",
+    "cleanup_voice": True
+  }
+)
+print(output)
+
+exit(9)

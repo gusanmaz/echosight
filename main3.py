@@ -76,8 +76,12 @@ def process_image(image_path):
                 "target_language_text_only": "Turkish",
             }
         )
+
+        translated_output = translated_output['text_output']
+
         print("Seamless Model finished\n")
         print("Turkish Description: " + translated_output)
+
 
         # Split the translated text into substrings of up to 255 characters
         substrings = [translated_output[i:i+255] for i in range(0, len(translated_output), 255)]

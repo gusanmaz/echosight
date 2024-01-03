@@ -1,88 +1,74 @@
 import os
+import sys
 import subprocess
+import threading
 import requests
+import replicate
+from evdev import InputDevice, categorize, ecodes
+from PIL import Image
+from io import BytesIO
 from pydub import AudioSegment
 import io
-import replicate
+import re
 from datetime import datetime
-from PIL import Image
-import cv2
+import logging
+
+# Global variable to check if a photo is being processed
+is_processing = False
 
 # Configurable parameters
-MAX_WIDTH = 1280
+KEY_ACTION = 'KEY_S'  # Default key for action, can be changed by the user
+CAMERA_DELAY = '0.1'  # Default camera delay in seconds
 
-def capture_camera_image(output_dir):
+# Set up logging
+logging.basicConfig(filename='camera_script.log', level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s',
+                    datefmt='%d-%m-%Y %H:%M:%S')
+
+def create_output_directory():
+    dir_name = datetime.now().strftime("%d_%m_%Y_%H_%M")
+    full_dir_path = os.path.join('output', dir_name)
+    os.makedirs(full_dir_path, exist_ok=True)
+    logging.info(f"Output directory created: {full_dir_path}")
+    return full_dir_path
+
+def download_and_play_audio(audio_urls, audio_file_name, output_dir):
     try:
-        # Initialize the camera (you might need to install OpenCV for this)
-        cap = cv2.VideoCapture(0)
-
-        # Capture a frame from the camera
-        ret, frame = cap.read()
-
-        # Generate a timestamp for the captured image
-        timestamp = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
-
-        # Define the image file path and name
-        image_file_name = f"{timestamp}_camera_capture.png"
-        image_file_path = os.path.join(output_dir, image_file_name)
-
-        # Save the captured frame as an image file
-        cv2.imwrite(image_file_path, frame)
-
-        # Release the camera
-        cap.release()
-
-        return image_file_path
-    except Exception as e:
-        print(f"An error occurred while capturing the camera image: {e}")
-        return None
-
-def download_and_play_audio(audio_urls, output_dir):
-    try:
-        # List to store the audio segments
         segments = []
-
-        # Download and append each audio file to the segments list
         for url in audio_urls:
             response = requests.get(url)
             if response.status_code != 200:
                 raise Exception("Failed to download the audio file from URL: " + url)
 
-            # Load this audio file into an AudioSegment
             segment = AudioSegment.from_file(io.BytesIO(response.content), format="wav")
             segments.append(segment)
 
-        # Merge all segments
         combined = segments[0]
         for segment in segments[1:]:
             combined += segment
 
-        # Save the combined audio file
-        timestamp = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
-        audio_file_name = f"{timestamp}_audio_description.wav"
         audio_file_path = os.path.join(output_dir, audio_file_name)
-        combined.export(audio_file_path, format="wav")
-
-        # Play the merged audio file
+        combined.export(audio_file_path, format='wav')
+        logging.info(f"Audio file created: {audio_file_path}")
         subprocess.run(["aplay", audio_file_path])
 
     except Exception as e:
+        logging.error(f"Error in download_and_play_audio: {e}")
         print(f"An error occurred: {e}")
 
-def process_image(image_path):
+def process_image(image_path, output_dir):
     try:
         with open(image_path, "rb") as image:
-            # Run the Bakllava model for image description
             description = replicate.run(
                 "cjwbw/cogvlm:a5092d718ea77a073e6d8f6969d5c0fb87d0ac7e4cdb7175427331e1798a34ed",
-                input={
-                    "vqa": False,
-                    "image": image,
-                    "query": "Describe this image."
-                }
+                input={"vqa": False, "image": image, "query": "Describe this image."}
             )
 
-            # Run the Seamless Communication model for translation
+            english_file = os.path.join(output_dir, "description_english.txt")
+            with open(english_file, 'w') as file:
+                file.write(description)
+            logging.info(f"English description saved: {english_file}")
+
             translated_output = replicate.run(
                 "cjwbw/seamless_communication:668a4fec05a887143e5fe8d45df25ec4c794dd43169b9a11562309b2d45873b0",
                 input={
@@ -91,16 +77,16 @@ def process_image(image_path):
                     "input_text_language": "English",
                     "target_language_text_only": "Turkish",
                 }
-            )
+            )['text_output']
 
-            translated_output = translated_output['text_output']
+            turkish_file = os.path.join(output_dir, "description_turkish.txt")
+            with open(turkish_file, 'w') as file:
+                file.write(translated_output)
+            logging.info(f"Turkish translation saved: {turkish_file}")
 
-            # Split the translated text into substrings of up to 255 characters
-            substrings = [translated_output[i:i + 255] for i in range(0, len(translated_output), 255)]
-
+            substrings = [translated_output[i:i+255] for i in range(0, len(translated_output), 255)]
             audio_urls = []
             for substring in substrings:
-                # Run the xtts-v2 model on each substring
                 output = replicate.run(
                     "lucataco/xtts-v2:684bc3855b37866c0c65add2ff39c78f3dea3f4ff103a436465326e0f438d55e",
                     input={
@@ -112,43 +98,79 @@ def process_image(image_path):
                 )
                 audio_urls.append(output)
 
-            return audio_urls
+            audio_file_name = "description_audio.wav"
+            return audio_urls, audio_file_name
     except Exception as e:
-        print(f"An error occurred while processing the image: {e}")
-        return None
-
-def create_output_directory(base_name):
-    dir_name = base_name
-    full_dir_path = os.path.join('output', dir_name)
-    os.makedirs(full_dir_path, exist_ok=True)
-    return full_dir_path
-
-def main():
-    try:
-        # Create an output directory
-        timestamp = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
-        output_dir = create_output_directory(timestamp)
-
-        # Capture an image from the camera
-        print("Capturing an image from the camera...")
-        image_path = capture_camera_image(output_dir)
-
-        if not image_path:
-            raise Exception("Failed to capture the camera image")
-
-        # Process the captured image
-        print("Processing the captured image...")
-        audio_output = process_image(image_path)
-
-        if not audio_output:
-            raise Exception("Failed to process the image or get the audio output")
-
-        # Download and play the audio that describes the image
-        print("Playing the audio...")
-        download_and_play_audio(audio_output, output_dir)
-
-    except Exception as e:
+        logging.error(f"Error in process_image: {e}")
         print(f"An error occurred: {e}")
 
-if __name__ == "__main__":
-    main()
+def capture_and_process():
+    global is_processing
+    if is_processing:
+        logging.warning("Previous image processing discarded.")
+        print("Previous image processing discarded.")
+        return
+
+    is_processing = True
+    output_dir = create_output_directory()
+    logging.info("Starting image capture and processing")
+
+    try:
+        subprocess.run(['libcamera-jpeg', '-t', f'{CAMERA_DELAY}sec', '-o', 'out.jpg'])
+        image_path = os.path.join(output_dir, 'captured_image.jpg')
+        os.rename('out.jpg', image_path)
+
+        logging.info("Image captured and processing started")
+        print("Processing the image...")
+        audio_output, audio_file_name = process_image(image_path, output_dir)
+
+        if not audio_output or not audio_file_name:
+            raise Exception("Failed to process the image or get the audio output")
+
+        print("Playing the audio...")
+        download_and_play_audio(audio_output, audio_file_name, output_dir)
+    except Exception as e:
+        logging.error(f"An error occurred in capture_and_process: {e}")
+        print(f"An error occurred in the processing function: {e}")
+
+    is_processing = False
+    logging.info("Image processing completed")
+
+def find_keyboard_device():
+    try:
+        result = subprocess.run(['ls', '/dev/input/by-id/'], capture_output=True, text=True)
+        if result.returncode != 0:
+            raise Exception("Failed to execute ls command")
+
+        matches = re.findall(r'usb-.*(?:kbd|keyboard)', result.stdout)
+        if not matches:
+            raise Exception("No keyboard device found")
+
+        keyboard_device = '/dev/input/by-id/' + matches[0]
+        logging.info(f"Keyboard device found: {keyboard_device}")
+        return keyboard_device
+    except Exception as e:
+        logging.error(f"Error in find_keyboard_device: {e}")
+        raise
+
+def handle_key_presses(keyboard):
+    try:
+        for event in keyboard.read_loop():
+            if event.type == ecodes.EV_KEY:
+                key_event = categorize(event)
+                if key_event.keystate == key_event.key_up and key_event.keycode == KEY_ACTION:
+                    logging.info(f"{KEY_ACTION} key pressed, initiating capture and process")
+                    print(f"{KEY_ACTION} key pressed, capturing image...")
+                    threading.Thread(target=capture_and_process).start()
+    except Exception as e:
+        logging.error(f"Error in handle_key_presses: {e}")
+        print(f"An error occurred: {e}")
+
+try:
+    keyboard_path = find_keyboard_device()
+    keyboard = InputDevice(keyboard_path)
+    print("Listening for key presses on device:", keyboard)
+    handle_key_presses(keyboard)
+except Exception as e:
+    logging.error(f"Top-level error: {e}")
+    print(f"An error occurred: {e}")

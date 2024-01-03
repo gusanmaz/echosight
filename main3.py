@@ -77,9 +77,12 @@ def process_image(image_path):
             }
         )
         print("Seamless Model finished\n")
+        print("Turkish Description: " + translated_output)
 
         # Split the translated text into substrings of up to 255 characters
         substrings = [translated_output[i:i+255] for i in range(0, len(translated_output), 255)]
+        for i, substring in enumerate(substrings):
+            print(f"Substring {i}: {substring}")
 
         audio_urls = []
         for substring in substrings:

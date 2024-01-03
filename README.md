@@ -53,16 +53,23 @@ The project generates multiple outputs during operation:
 
 This project uses models from https://replicate.com/ to generate voice descriptions of the images. You can find the models used in this project from the links below.
 
-* cogvlm: https://replicate.com/cjwbw/cogvlm
-* Seamless Communication: https://replicate.com/cjwbw/seamless-communication
-* Coqui XTTS-v2: https://replicate.com/cjwbw/coqui-xtts-v2
+* **cogvlm**
+  * Replicate Model: https://replicate.com/cjwbw/cogvlm 
+  * Github Repo: https://github.com/THUDM/CogVLM
+* **Seamless Communication**
+  * Replicate Model: https://replicate.com/cjwbw/seamless-communication
+  * Github Repo: https://github.com/facebookresearch/seamless_communication
+* **Coqui XTTS-v2**
+  * Replicate Model: https://replicate.com/cjwbw/coqui-xtts-v2
+  * Github Repo: https://github.com/coqui-ai/TTS
 
 Future versions may incorporate different models, and the code could be adapted for easier experimentation with various models.
 
 ### Cost
 
-Conservative Cost Estimate: 20 cents per image
-Conservative Runtime Estimate: 40 seconds per image to produce audio (excluding time spent for starting the models 
+* **Conservative Cost Estimate**: 0.2$ per image
+* **Conservative Runtime Estimate**: 40 seconds per image to produce audio (excluding time spent for starting the 
+  models 
 on Replicate.com)
 
 ### License

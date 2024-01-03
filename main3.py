@@ -9,11 +9,14 @@ from PIL import Image
 from io import BytesIO
 from pydub import AudioSegment
 import io
-import subprocess
 import re
 
 # Global variable to check if a photo is being processed
 is_processing = False
+
+# Configurable parameters
+KEY_ACTION = 'KEY_S'  # Default key for action, can be changed by the user
+CAMERA_DELAY = '0.1'  # Default camera delay in seconds
 
 def download_and_play_audio(audio_urls):
     try:
@@ -94,7 +97,6 @@ def process_image(image_path):
 
         return audio_urls
 
-
 def capture_and_process():
     global is_processing
     if is_processing:
@@ -103,8 +105,8 @@ def capture_and_process():
 
     is_processing = True
 
-    # Capture the image using libcamera-jpeg
-    os.system('libcamera-jpeg -t 0.1sec -o out.jpg')
+    # Capture the image using libcamera-jpeg with configurable delay
+    subprocess.run(['libcamera-jpeg', '-t', f'{CAMERA_DELAY}sec', '-o', 'out.jpg'])
 
     # Process the captured image
     try:
@@ -120,7 +122,6 @@ def capture_and_process():
         print(f"An error occurred in the processing function: {e}")
 
     is_processing = False
-
 
 def find_keyboard_device():
     # Execute the ls command and get the output
@@ -142,11 +143,9 @@ def handle_key_presses(keyboard):
     for event in keyboard.read_loop():
         if event.type == ecodes.EV_KEY:
             key_event = categorize(event)
-            if key_event.keystate == key_event.key_up and key_event.keycode == 'KEY_S':
-                print("S key pressed, capturing image...")
-                # Run capture and process in a separate thread
+            if key_event.keystate == key_event.key_up and key_event.keycode == KEY_ACTION:
+                print(f"{KEY_ACTION} key pressed, capturing image...")
                 threading.Thread(target=capture_and_process).start()
-
 
 try:
     keyboard_path = find_keyboard_device()
@@ -155,3 +154,4 @@ try:
     handle_key_presses(keyboard)
 except Exception as e:
     print(f"An error occurred: {e}")
+

@@ -1,29 +1,42 @@
 # EchoSight
 
-This project aims to help visually impaired people to understand their surroundings by listening to the description of the images captured by a camera.
-There are currently two modes of operation. First one is to capture images from Raspberry Pi Camera by pressing a keyboard button (default: S) to listen voice description of the captured image. Second one is to give an image path or URL to listen voice description of the image.
-Second mode of operation is not limited to Raspberry Pi. You provide an image path or URL to listen voice description of the image.
+EchoSight is designed to assist visually impaired individuals by providing audible descriptions of images captured by a camera. It operates in two modes: one for capturing images using a Raspberry Pi Camera and listening to their voice descriptions, and another for inputting an image path or URL on various operating systems to hear voice descriptions.
 
-### Pre-requisites (For Usage on Raspberry Pi)
+## Output Files
 
-* Boot into Raspberry Pi OS
-* To download and create a Raspberry Pi OS on an SD card you could install [Raspberry Pi Imager](https://downloads.raspberrypi.org/imager/imager_latest.exe) on your computer.
-* Test whether your Raspberry Pi Camera is working by running
+The project generates multiple outputs during operation:
 
-`libcamera-jpeg -o z.jpg`
+- **Image Files**: Captured or downloaded images are saved in the `output` directory.
+- **Text Descriptions**: Text descriptions of the images in both English and Turkish are saved as `.txt` files in the `output` directory.
+- **Audio Files**: The Turkish voice description of the image is saved as a `.wav` file in the `output` directory.
+- **Log Files**: Event logs and errors are recorded and saved in `events.log` files within the respective output subdirectories.
 
-### Installation
+## Configurable Parameters
 
-* Obtain Replicate.com API TOKEN
-   * For Bash run `echo 'export REPLICATE_API_TOKEN=r8_RAF**********************************' >> ~/.bashrc`
-   * For Zsh  run `echo 'export REPLICATE_API_TOKEN=r8_RAF**********************************' >> ~/.zshrc`
-* keyboard_path is set by program. But in case of failure to set this value correctly Read https://chat.openai.
-  com/share/bd2753d8-0ee3-4963-8e26-9569575470eb to learn how to find you keyboard path to change `keyboard_path` string with correct value.
-* `git clone https://github.com/gusanmaz/echosight`
-* `cd echosight`
-* `python3 -m venv env`
-* `source env/bin/activate`
-* `pip install -r requirements.txt`
+- **KEY_ACTION**: In `rpi.py`, this is set to 'KEY_S' by default. Modify the `KEY_ACTION` variable to change the key action.
+- **CAMERA_DELAY**: In `rpi.py`, the default camera delay is '0.1' seconds. Adjust the `CAMERA_DELAY` variable to change this setting.
+- **MAX_WIDTH**: In `image2speech.py`, the maximum image width for resizing is controlled by `MAX_WIDTH`. Alter this parameter as needed.
+
+## Pre-requisites (For Raspberry Pi Usage)
+
+- Ensure Raspberry Pi OS is installed.
+- Use [Raspberry Pi Imager](https://downloads.raspberrypi.org/imager/imager_latest.exe) to prepare your SD card.
+- Test your Raspberry Pi Camera: `libcamera-jpeg -o z.jpg`.
+
+## Installation
+
+- Obtain your Replicate.com API token:
+  - For Bash: `echo 'export REPLICATE_API_TOKEN=your_token_here' >> ~/.bashrc`.
+  - For Zsh: `echo 'export REPLICATE_API_TOKEN=your_token_here' >> ~/.zshrc`.
+- Set `keyboard_path` correctly if automatic detection fails. Refer to [this guide](https://chat.openai.com/share/bd2753d8-0ee3-4963-8e26-9569575470eb).
+- Clone and setup the EchoSight environment:
+  ```bash
+  git clone https://github.com/gusanmaz/echosight
+  cd echosight
+  python3 -m venv env
+  source env/bin/activate
+  pip install -r requirements.txt
+
 
 ### Usage 
 **(Raspberry Pi) To capture images from Raspberry Pi Camera by pressing a keyboard button (default: S) to listen 
@@ -44,7 +57,13 @@ This project uses models from https://replicate.com/ to generate voice descripti
 * Seamless Communication: https://replicate.com/cjwbw/seamless-communication
 * Coqui XTTS-v2: https://replicate.com/cjwbw/coqui-xtts-v2
 
-Different models may be used in the future. Code may be rewritten to make experimenting with different models easier.
+Future versions may incorporate different models, and the code could be adapted for easier experimentation with various models.
+
+### Cost
+
+Conservative Cost Estimate: 20 cents per image
+Conservative Runtime Estimate: 40 seconds per image to produce audio (excluding time spent for starting the models 
+on Replicate.com)
 
 ### License
 Apache License 2.0
